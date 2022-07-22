@@ -9,23 +9,21 @@ https://pjreddie.com/projects/mnist-in-csv/
 转换后的CVS文件在Mnist文件夹中
 '''
 def convert(imgf, labelf, outf, n):
-    f = open(imgf, "rb")
-    o = open(outf, "w")
-    l = open(labelf, "rb")
+    with open(imgf, "rb") as f:
+        o = open(outf, "w")
+        l = open(labelf, "rb")
 
-    f.read(16)
-    l.read(8)
-    images = []
+        f.read(16)
+        l.read(8)
+        images = []
 
-    for i in range(n):
-        image = [ord(l.read(1))]
-        for j in range(28*28):
-            image.append(ord(f.read(1)))
-        images.append(image)
+        for _ in range(n):
+            image = [ord(l.read(1))]
+            image.extend(ord(f.read(1)) for _ in range(28*28))
+            images.append(image)
 
-    for image in images:
-        o.write(",".join(str(pix) for pix in image)+"\n")
-    f.close()
+        for image in images:
+            o.write(",".join(str(pix) for pix in image)+"\n")
     o.close()
     l.close()
 

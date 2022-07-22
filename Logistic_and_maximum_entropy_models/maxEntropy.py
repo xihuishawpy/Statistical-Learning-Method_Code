@@ -29,11 +29,12 @@ def loadData(fileName):
     :return: list形式的数据集及标记
     '''
     # 存放数据及标记的list
-    dataList = []; labelList = []
+    dataList = []
+    labelList = []
     # 打开文件
     fr = open(fileName, 'r')
     # 将文件按行读取
-    for line in fr.readlines():
+    for line in fr:
         # 对每一行数据按切割福','进行切割，返回字段列表
         curLine = line.strip().split(',')
         #二分类，list中放置标签
@@ -136,7 +137,7 @@ class maxEnt:
         #不可能通过(1, 1)就能找到对应的id，因为对于(1, 1),字典中有多重映射
         #所以在生成字典的时总共生成了特征数个字典，例如在mnist中样本有784维特征，所以生成784个字典，属于
         #不同特征的xy存入不同特征内的字典中，使其不会混淆
-        xy2idDict = [{} for i in range(self.featureNum)]
+        xy2idDict = [{} for _ in range(self.featureNum)]
         #初始化id到xy对的字典。因为id与(x，y)的指向是唯一的，所以可以使用一个字典
         id2xyDict = {}
 
@@ -165,7 +166,7 @@ class maxEnt:
         :return:
         '''
         #建立特征数目个字典，属于不同特征的(x, y)对存入不同的字典中，保证不被混淆
-        fixyDict = [defaultdict(int) for i in range(self.featureNum)]
+        fixyDict = [defaultdict(int) for _ in range(self.featureNum)]
         #遍历训练集中所有样本
         for i in range(len(self.trainDataList)):
             #遍历样本中所有特征

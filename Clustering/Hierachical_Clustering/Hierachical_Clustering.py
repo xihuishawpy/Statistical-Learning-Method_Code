@@ -32,7 +32,7 @@ def load_data(file):
     Xlist = []  #定义一个列表用来保存每条数据
     Ylist = []  #定义一个列表用来保存每条数据的类别标签
     fr = open(file)
-    for line in fr.readlines():  #逐行读取数据，鸢尾花数据集每一行表示一个鸢尾花的特征和类别标签，用逗号分隔
+    for line in fr:
         cur = line.split(',')
         label = cur[-1]
         X = [float(x) for x in cur[:-1]]  #用列表来表示一条特征数据
@@ -74,9 +74,7 @@ def cal_distance(xi, xj):
     dist - (float) 两条数据的欧式距离
     
     '''
-    dist = 0
-    for col in range(len(xi)):
-        dist += (xi[col]-xj[col]) ** 2
+    dist = sum((xi[col]-xj[col]) ** 2 for col in range(len(xi)))
     dist = math.sqrt(dist)
     return dist
 
@@ -115,9 +113,7 @@ def cal_groupdist(g1, g2, group_dict, dists):
     d = []
     #循环计算两类之间两两数据的距离
     for xi in group_dict[g1]:
-        for xj in group_dict[g2]:
-            if xi != xj:
-                d.append(dists[xi][xj])
+        d.extend(dists[xi][xj] for xj in group_dict[g2] if xi != xj)
     return min(d)
 
 
@@ -133,20 +129,17 @@ def Clustering(Xarray, k, dists):
     group_dict - (dict) 类别字典
     
     '''
-    group_dict = {}  #定义一个空字典，用于保存聚类所产生的所有类别
-    for n in range(Xarray.shape[0]):  #层次聚类是一种聚合聚类方法，首先将每条数据都分到不同的类，数据的类别标签为0-(N-1)，其中N为数据条数
-        group_dict[n] = [n]
+    group_dict = {n: [n] for n in range(Xarray.shape[0])}
     newgroup = Xarray.shape[0]  #newgroup表示新的类别标签，此时下一个类别标签为N
     while len(group_dict.keys()) > k:  #当类别数大于我们所设定的类别数k时，不断循环进行聚类
         print('Number of groups:', len(group_dict.keys()))
         group_dists = {}  #定义一个空字典，用于保存两两类之间的间距，其中字典的值为元组(g1, g2)，表示两个类别标签，字典的键为这两个类别的间距
         #循环计算group_dict中两两类别之间的间距，保存到group_dists中
-        for g1 in group_dict.keys():
-            for g2 in group_dict.keys():
-                if g1 != g2:
-                    if (g1, g2) not in group_dists.values():
-                        d = cal_groupdist(g1, g2, group_dict, dists)
-                        group_dists[d] = (g1, g2)
+        for g1 in group_dict:
+            for g2 in group_dict:
+                if g1 != g2 and (g1, g2) not in group_dists.values():
+                    d = cal_groupdist(g1, g2, group_dict, dists)
+                    group_dists[d] = (g1, g2)
         group_mindist = min(list(group_dists.keys()))  #取类别之间的最小间距
         mingroups = group_dists[group_mindist]  #取间距最小的两个类别
         new = []  #定义一个列表，用于保存所产生的新类中包含的数据，这里用之前对每条数据给的类别标签0-(N-1)来表示
@@ -193,14 +186,8 @@ def Adjusted_Rand_Index(group_dict, Ylist, k):
             sum_j[j] += group_array[i][j]
             if group_array[i][j] >= 2:
                 RI += comb(group_array[i][j], 2)  #comb用于计算group_array[i][j]中两两组合的组合数
-    ci = 0  #ci保存聚类结果中同一类中的两两组合数之和
-    cj = 0  #cj保存外部标签中同一类中的两两组合数之和
-    for i in range(k):
-        if sum_i[i] >= 2:
-            ci += comb(sum_i[i], 2)
-    for j in range(k):
-        if sum_j[j] >= 2:
-            cj += comb(sum_j[j], 2)
+    ci = sum(comb(sum_i[i], 2) for i in range(k) if sum_i[i] >= 2)
+    cj = sum(comb(sum_j[j], 2) for j in range(k) if sum_j[j] >= 2)
     E_RI = ci * cj / comb(len(Ylist), 2)  #计算RI的期望
     max_RI = (ci + cj) / 2  #计算RI的最大值
     return (RI-E_RI) / (max_RI-E_RI)  #返回调整兰德系数的值

@@ -25,11 +25,12 @@ def loadData(fileName):
     :return: list形式的数据集及标记
     '''
     # 存放数据及标记的list
-    dataList = []; labelList = []
+    dataList = []
+    labelList = []
     # 打开文件
     fr = open(fileName, 'r')
     # 将文件按行读取
-    for line in fr.readlines():
+    for line in fr:
         # 对每一行数据按切割福','进行切割，返回字段列表
         curLine = line.strip().split(',')
 
@@ -45,8 +46,6 @@ def loadData(fileName):
         #[int(num) for num in curLine[1:]] -> 遍历每一行中除了以第一哥元素（标记）外将所有元素转换成int类型
         #[int(num)/255 for num in curLine[1:]] -> 将所有数据除255归一化(非必须步骤，可以不归一化)
         dataList.append([int(num)/255 for num in curLine[1:]])
-        # dataList.append([int(num) for num in curLine[1:]])
-
     #返回data和label
     return dataList, labelList
 
@@ -63,10 +62,7 @@ def predict(w, x):
     #该公式参考“6.1.2 二项逻辑斯蒂回归模型”中的式6.5
     P1 = np.exp(wx) / (1 + np.exp(wx))
     #如果为1的概率大于0.5，返回1
-    if P1 >= 0.5:
-        return 1
-    #否则返回0
-    return 0
+    return 1 if P1 >= 0.5 else 0
 
 def logisticRegression(trainDataList, trainLabelList, iter = 200):
     '''
@@ -91,7 +87,7 @@ def logisticRegression(trainDataList, trainLabelList, iter = 200):
     h = 0.001
 
     #迭代iter次进行随机梯度下降
-    for i in range(iter):
+    for _ in range(iter):
         #每次迭代冲遍历一次所有样本，进行随机梯度下降
         for j in range(trainDataList.shape[0]):
             #随机梯度上升部分
@@ -128,12 +124,11 @@ def model_test(testDataList, testLabelList, w):
         testDataList[i].append(1)
 
     #错误值计数
-    errorCnt = 0
-    #对于测试集中每一个测试样本进行验证
-    for i in range(len(testDataList)):
-        #如果标记与预测不一致，错误值加1
-        if testLabelList[i] != predict(w, testDataList[i]):
-            errorCnt += 1
+    errorCnt = sum(
+        testLabelList[i] != predict(w, testDataList[i])
+        for i in range(len(testDataList))
+    )
+
     #返回准确率
     return 1 - errorCnt / len(testDataList)
 
