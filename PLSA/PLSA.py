@@ -115,7 +115,7 @@ def do_plsa(X, K, words, iters = 10):
     P_zk_wi_dj = np.zeros((M, N, K))
     #迭代执行E步和M步
     for i in range(iters):
-        print('{}/{}'.format(i+1, iters))  
+        print(f'{i + 1}/{iters}')
         #执行E步
         for m in range(M):
             for n in range(N):
@@ -154,10 +154,8 @@ if __name__ == "__main__":
     #打印出每个话题zk条件下出现概率最大的前10个单词，即P(wi|zk)在话题zk中最大的10个值对应的单词，作为对话题zk的文本描述
     for k in range(K):
         sort_inds = np.argsort(P_wi_zk[k])[::-1]  #对话题zk条件下的P(wi|zk)的值进行降序排列后取出对应的索引值
-        topic = []  #定义一个空列表用于保存话题zk概率最大的前10个单词
-        for i in range(10):
-            topic.append(words[sort_inds[i]])  
+        topic = [words[sort_inds[i]] for i in range(10)]
         topic = ' '.join(topic)  #将10个单词以空格分隔，构成对话题zk的文本表述
-        print('Topic {}: {}'.format(k+1, topic))  #打印话题zk
+        print(f'Topic {k + 1}: {topic}')
     end = time.time()
     print('Time:', end-start)

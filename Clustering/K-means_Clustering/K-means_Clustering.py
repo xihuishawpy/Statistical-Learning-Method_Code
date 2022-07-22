@@ -34,7 +34,7 @@ def load_data(file):
     Xlist = []  #定义一个列表用来保存每条数据
     Ylist = []  #定义一个列表用来保存每条数据的类别标签
     fr = open(file)
-    for line in fr.readlines():  #逐行读取数据，鸢尾花数据集每一行表示一个鸢尾花的特征和类别标签，用逗号分隔
+    for line in fr:
         cur = line.split(',')
         label = cur[-1]
         X = [float(x) for x in cur[:-1]]  #用列表来表示一条特征数据
@@ -76,9 +76,7 @@ def cal_distance(xi, xj):
     dist - (float) 两条数据的欧式距离
     
     '''
-    dist = 0
-    for col in range(len(xi)):
-        dist += (xi[col]-xj[col]) ** 2
+    dist = sum((xi[col]-xj[col]) ** 2 for col in range(len(xi)))
     dist = math.sqrt(dist)
     return dist
 
@@ -134,14 +132,8 @@ def Adjusted_Rand_Index(group_dict, Ylist, k):
             sum_j[j] += group_array[i][j]
             if group_array[i][j] >= 2:
                 RI += comb(group_array[i][j], 2)  #comb用于计算group_array[i][j]中两两组合的组合数
-    ci = 0  #ci保存聚类结果中同一类中的两两组合数之和
-    cj = 0  #cj保存外部标签中同一类中的两两组合数之和
-    for i in range(k):
-        if sum_i[i] >= 2:
-            ci += comb(sum_i[i], 2)
-    for j in range(k):
-        if sum_j[j] >= 2:
-            cj += comb(sum_j[j], 2)
+    ci = sum(comb(sum_i[i], 2) for i in range(k) if sum_i[i] >= 2)
+    cj = sum(comb(sum_j[j], 2) for j in range(k) if sum_j[j] >= 2)
     E_RI = ci * cj / comb(len(Ylist), 2)  #计算RI的期望
     max_RI = (ci + cj) / 2  #计算RI的最大值
     return (RI-E_RI) / (max_RI-E_RI)  #返回调整兰德系数的值
@@ -165,7 +157,7 @@ def Kmeans(Xarray, k, iters):
     scores = []  #定义一个空列表用来保存每次迭代的ARI得分
     for i in range(iters):
         group_dict = {i:[] for i in range(k)}  #定义一个空字典，用于保存聚类所产生的所有类别，其中字典的键为类别标签，值为类别所包含的数据列表，以索引表示每条数据
-        print('{}/{}'.format(i+1, iters))
+        print(f'{i + 1}/{iters}')
         #循环计算每条数据到各个聚类中心的距离
         for n in range(Xarray.shape[0]):
             dists = []  #保存第n条数据到各个聚类中心的距离

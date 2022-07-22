@@ -23,11 +23,12 @@ def loadData(fileName):
     :return: 数据集和标签集
     '''
     #存放数据及标记
-    dataArr = []; labelArr = []
+    dataArr = []
+    labelArr = []
     #读取文件
     fr = open(fileName)
     #遍历文件中的每一行
-    for line in fr.readlines():
+    for line in fr:
         #获取当前行，并按“，”切割成字段放入列表中
         #strip：去掉每行字符串首尾指定的字符（默认空格或换行符）
         #split：按照指定的字符将字符串切割成每个字段，返回列表形式

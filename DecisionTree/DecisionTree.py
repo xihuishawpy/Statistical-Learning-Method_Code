@@ -23,11 +23,12 @@ def loadData(fileName):
     :return: 数据集和标签集
     '''
     #存放数据及标记
-    dataArr = []; labelArr = []
+    dataArr = []
+    labelArr = []
     #读取文件
     fr = open(fileName)
     #遍历文件中的每一行
-    for line in fr.readlines():
+    for line in fr:
         #获取当前行，并按“，”切割成字段放入列表中
         #strip：去掉每行字符串首尾指定的字符（默认空格或换行符）
         #split：按照指定的字符将字符串切割成每个字段，返回列表形式
@@ -54,7 +55,7 @@ def majorClass(labelArr):
     for i in range(len(labelArr)):
         #当第一次遇到A标签时，字典内还没有A标签，这时候直接幅值加1是错误的，
         #所以需要判断字典中是否有该键，没有则创建，有就直接自增
-        if labelArr[i] in classDict.keys():
+        if labelArr[i] in classDict:
             # 若在字典中存在该标签，则直接加1
             classDict[labelArr[i]] += 1
         else:
@@ -81,7 +82,7 @@ def calc_H_D(trainLabelArr):
     #定义区间内，出现了问题
     #所以使用集合的方式先知道当前标签中都出现了那些标签，随后对每个标签进行计算，如果没出现的标签那一项就
     #不在经验熵中出现（未参与，对经验熵无影响），保证log的计算能一直有定义
-    trainLabelSet = set([label for label in trainLabelArr])
+    trainLabelSet = set(list(trainLabelArr))
     #遍历每一个出现过的标签
     for i in trainLabelSet:
         #计算|Ck|/|D|
@@ -105,20 +106,16 @@ def calcH_D_A(trainDataArr_DevFeature, trainLabelArr):
     :param trainLabelArr: 标签集数组
     :return: 经验条件熵
     '''
-    #初始为0
-    H_D_A = 0
     #在featue那列放入集合中，是为了根据集合中的数目知道该feature目前可取值数目是多少
-    trainDataSet = set([label for label in trainDataArr_DevFeature])
+    trainDataSet = set(list(trainDataArr_DevFeature))
 
-    #对于每一个特征取值遍历计算条件经验熵的每一项
-    for i in trainDataSet:
-        #计算H(D|A)
-        #trainDataArr_DevFeature[trainDataArr_DevFeature == i].size / trainDataArr_DevFeature.size:|Di| / |D|
-        #calc_H_D(trainLabelArr[trainDataArr_DevFeature == i]):H(Di)
-        H_D_A += trainDataArr_DevFeature[trainDataArr_DevFeature == i].size / trainDataArr_DevFeature.size \
-                * calc_H_D(trainLabelArr[trainDataArr_DevFeature == i])
     #返回得出的条件经验熵
-    return H_D_A
+    return sum(
+        trainDataArr_DevFeature[trainDataArr_DevFeature == i].size
+        / trainDataArr_DevFeature.size
+        * calc_H_D(trainLabelArr[trainDataArr_DevFeature == i])
+        for i in trainDataSet
+    )
 
 def calcBestFeature(trainDataList, trainLabelList):
     '''
@@ -138,7 +135,7 @@ def calcBestFeature(trainDataList, trainLabelList):
     maxG_D_A = -1
     #初始化最大信息增益的特征
     maxFeature = -1
-    
+
     #“5.2.2 信息增益”中“算法5.1（信息增益的算法）”第一步：
     #1.计算数据集D的经验熵H(D)
     H_D = calc_H_D(trainLabelArr)
@@ -181,7 +178,7 @@ def getSubDataArr(trainDataArr, trainLabelArr, A, a):
         #如果当前样本的特征为指定特征值a
         if trainDataArr[i][A] == a:
             #那么将该样本的第A个特征切割掉，放入返回的数据集中
-            retDataArr.append(trainDataArr[i][0:A] + trainDataArr[i][A+1:])
+            retDataArr.append(trainDataArr[i][:A] + trainDataArr[i][A+1:])
             #将该样本的标签放入返回标签集中
             retLabelArr.append(trainLabelArr[i])
     #返回新的数据集和标签集
@@ -209,7 +206,7 @@ def createTree(*dataSet):
     #将标签放入一个字典中，当前样本有多少类，在字典中就会有多少项
     #也相当于去重，多次出现的标签就留一次。举个例子，假如处理结束后字典的长度为1，那说明所有的样本
     #都是同一个标签，那就可以直接返回该标签了，不需要再生成子节点了。
-    classDict = {i for i in trainLabelList}
+    classDict = set(trainLabelList)
     #如果D中所有实例属于同一类Ck，则置T为单节点数，并将Ck作为该节点的类，返回T
     #即若所有样本的标签一致，也就不需要再分化，返回标记作为该节点的值，返回后这就是一个叶子节点
     if len(classDict) == 1:
@@ -256,25 +253,23 @@ def predict(testDataList, tree):
         #例如{73: {0: {74:6}}}看起来节点很多，但是对于字典的最顶层来说，只有73一个key，其余都是value
         #若还是采用for来读取的话不太合适，所以使用下行这种方式读取key和value
         (key, value), = tree.items()
-        #如果当前的value是字典，说明还需要遍历下去
-        if type(tree[key]).__name__ == 'dict':
-            #获取目前所在节点的feature值，需要在样本中删除该feature
-            #因为在创建树的过程中，feature的索引值永远是对于当时剩余的feature来设置的
-            #所以需要不断地删除已经用掉的特征，保证索引相对位置的一致性
-            dataVal = testDataList[key]
-            del testDataList[key]
-            #将tree更新为其子节点的字典
-            tree = value[dataVal]
-            #如果当前节点的子节点的值是int，就直接返回该int值
-            #例如{403: {0: 7, 1: {297:7}}，dataVal=0
-            #此时上一行tree = value[dataVal]，将tree定位到了7，而7不再是一个字典了，
-            #这里就可以直接返回7了，如果tree = value[1]，那就是一个新的子节点，需要继续遍历下去
-            if type(tree).__name__ == 'int':
-                #返回该节点值，也就是分类值
-                return tree
-        else:
+        if type(tree[key]).__name__ != 'dict':
             #如果当前value不是字典，那就返回分类值
             return value
+        #获取目前所在节点的feature值，需要在样本中删除该feature
+        #因为在创建树的过程中，feature的索引值永远是对于当时剩余的feature来设置的
+        #所以需要不断地删除已经用掉的特征，保证索引相对位置的一致性
+        dataVal = testDataList[key]
+        del testDataList[key]
+        #将tree更新为其子节点的字典
+        tree = value[dataVal]
+        #如果当前节点的子节点的值是int，就直接返回该int值
+        #例如{403: {0: 7, 1: {297:7}}，dataVal=0
+        #此时上一行tree = value[dataVal]，将tree定位到了7，而7不再是一个字典了，
+        #这里就可以直接返回7了，如果tree = value[1]，那就是一个新的子节点，需要继续遍历下去
+        if type(tree).__name__ == 'int':
+            #返回该节点值，也就是分类值
+            return tree
 
 def model_test(testDataList, testLabelList, tree):
     '''
@@ -285,12 +280,11 @@ def model_test(testDataList, testLabelList, tree):
     :return: 准确率
     '''
     #错误次数计数
-    errorCnt = 0
-    #遍历测试集中每一个测试样本
-    for i in range(len(testDataList)):
-        #判断预测与标签中结果是否一致
-        if testLabelList[i] != predict(testDataList[i], tree):
-            errorCnt += 1
+    errorCnt = sum(
+        testLabelList[i] != predict(testDataList[i], tree)
+        for i in range(len(testDataList))
+    )
+
     #返回准确率
     return 1 - errorCnt / len(testDataList)
 

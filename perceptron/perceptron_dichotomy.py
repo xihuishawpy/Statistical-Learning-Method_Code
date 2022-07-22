@@ -24,11 +24,12 @@ def loadData(fileName):
     '''
     print('start to read data')
     # 存放数据及标记的list
-    dataArr = []; labelArr = []
+    dataArr = []
+    labelArr = []
     # 打开文件
     fr = open(fileName, 'r')
     # 将文件按行读取
-    for line in fr.readlines():
+    for line in fr:
         # 对每一行数据按切割福','进行切割，返回字段列表
         curLine = line.strip().split(',')
 
@@ -129,10 +130,8 @@ def model_test(dataArr, labelArr, w, b):
         result = -1 * yi * (w * xi.T + b)
         #如果-yi(w*xi+b)>=0，说明该样本被误分类，错误样本数加一
         if result >= 0: errorCnt += 1
-    #正确率 = 1 - （样本分类错误数 / 样本总数）
-    accruRate = 1 - (errorCnt / m)
     #返回正确率
-    return accruRate
+    return 1 - (errorCnt / m)
 
 if __name__ == '__main__':
     #获取当前时间

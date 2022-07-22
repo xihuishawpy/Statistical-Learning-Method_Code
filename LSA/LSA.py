@@ -89,9 +89,7 @@ def do_lsa(X, k, words):
     w, v = np.linalg.eig(np.matmul(X.T, X))  #计算Sx的特征值和特征向量，其中Sx=X.T*X，Sx的特征值w即为X的奇异值分解的奇异值，v即为对应的奇异向量
     sort_inds = np.argsort(w)[::-1]  #对特征值降序排列后取出对应的索引值
     w = np.sort(w)[::-1]  #对特征值降序排列
-    V_T = []  #用来保存矩阵V的转置
-    for ind in sort_inds:
-        V_T.append(v[ind]/np.linalg.norm(v[ind]))  #将降序排列后各特征值对应的特征向量单位化后保存到V_T中
+    V_T = [v[ind]/np.linalg.norm(v[ind]) for ind in sort_inds]
     V_T = np.array(V_T)  #将V_T转换为数组，方便之后的操作
     Sigma = np.diag(np.sqrt(w))  #将特征值数组w转换为对角矩阵，即得到SVD分解中的Sigma
     U = np.zeros((len(words), k))  #用来保存SVD分解中的矩阵U
@@ -101,9 +99,7 @@ def do_lsa(X, k, words):
     topics = []  #用来保存k个话题
     for i in range(k):
         inds = np.argsort(U[:, i])[::-1]  #U的每个列向量表示一个话题向量，话题向量的长度为m，其中每个值占向量值之和的比重表示对应单词在当前话题中所占的比重，这里对第i个话题向量的值降序排列后取出对应的索引值
-        topic = []  #用来保存第i个话题
-        for j in range(10):
-            topic.append(words[inds[j]])  #根据索引inds取出当前话题中比重最大的10个单词作为第i个话题
+        topic = [words[inds[j]] for j in range(10)]
         topics.append(' '.join(topic))  #保存话题i
     return topics
 
@@ -118,6 +114,6 @@ if __name__ == "__main__":
     topics = do_lsa(X, k, words)  #进行潜在语义分析
     print('Generated Topics:')
     for i in range(k):
-        print('Topic {}: {}'.format(i+1, topics[i]))  #打印分析后得到的每个话题
+        print(f'Topic {i + 1}: {topics[i]}')
     end = time.time()  #保存结束时间
     print('Time:', end-start)

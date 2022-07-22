@@ -53,7 +53,7 @@ def trainParameter(fileName):
     #B依据10.38
     #注：并没有使用Baum-Welch算法，只是借助了其内部的三个参数生成公式，其实
     #公式并不是Baum-Welch特有的，只是在那一节正好有描述
-    for line in fr.readlines():
+    for line in fr:
         #---------------------训练集单行样例--------------------
         #深圳  有  个  打工者  阅览室
         #------------------------------------------------------
@@ -77,12 +77,11 @@ def trainParameter(fileName):
         #对每一个单词进行遍历
         for i in range(len(curLine)):
             #如果长度为1，则直接将该字标记为S，即单个词
-            if len(curLine[i]) == 1:
-                label = 'S'
-            else:
-                #如果长度不为1，开头为B，最后为E，中间添加长度-2个M
-                #如果长度刚好为2，长度-2=0也就不添加了，反之添加对应个数的M
-                label = 'B' + 'M' * (len(curLine[i]) - 2) + 'E'
+            label = (
+                'S'
+                if len(curLine[i]) == 1
+                else 'B' + 'M' * (len(curLine[i]) - 2) + 'E'
+            )
 
             #如果是单行开头第一个字，PI中对应位置加1,
             if i == 0: PI[statuDict[label[0]]] += 1
@@ -121,24 +120,17 @@ def trainParameter(fileName):
 
         #那么当单向概率为0的时候，log没有定义，因此需要单独判断
         #如果该项为0，则手动赋予一个极小值
-        if PI[i] == 0:  PI[i] = -3.14e+100
-        #如果不为0，则计算概率，再对概率求log
-        else: PI[i] = np.log(PI[i] / sum)
-
+        PI[i] = -3.14e+100 if PI[i] == 0 else np.log(PI[i] / sum)
     #与上方PI思路一样，求得A的概率对数
     for i in range(len(A)):
         sum = np.sum(A[i])
         for j in range(len(A[i])):
-            if A[i][j] == 0: A[i][j] = -3.14e+100
-            else: A[i][j] = np.log(A[i][j] / sum)
-
+            A[i][j] = -3.14e+100 if A[i][j] == 0 else np.log(A[i][j] / sum)
     #与上方PI思路一样，求得B的概率对数
     for i in range(len(B)):
         sum = np.sum(B[i])
         for j in range(len(B[i])):
-            if B[i][j] == 0: B[i][j] = -3.14e+100
-            else:B[i][j] = np.log(B[i][j] / sum)
-
+            B[i][j] = -3.14e+100 if B[i][j] == 0 else np.log(B[i][j] / sum)
     #返回统计得到的三个参数
     return PI, A, B
 
@@ -153,7 +145,7 @@ def loadArticle(fileName):
     #打开文件
     fr = open(fileName, encoding='utf-8')
     #按行读取文件
-    for line in fr.readlines():
+    for line in fr:
         #读到的每行最后都有一个\n，使用strip将最后的回车符去掉
         line = line.strip()
         #将该行放入文章列表中
@@ -178,13 +170,13 @@ def participle(artical, PI, A, B):
     for line in artical:
         #初始化δ，δ存放四种状态的概率值，因为状态链中每个状态都有
         #四种概率值，因此长度时该行的长度
-        delta = [[0 for i in range(4)] for i in range(len(line))]
+        delta = [[0 for _ in range(4)] for _ in range(len(line))]
         #依据算法10.5 第一步：初始化
         for i in range(4):
             #初始化δ状态链中第一个状态的四种状态概率
             delta[0][i] = PI[i] + B[i][ord(line[0])]
         #初始化ψ，初始时为0
-        psi = [[0 for i in range(4)] for i in range(len(line))]
+        psi = [[0 for _ in range(4)] for _ in range(len(line))]
 
         #算法10.5中的第二步：递推
         #for循环的符号与书中公式一致，可以对比着看来理解
@@ -215,15 +207,11 @@ def participle(artical, PI, A, B):
                 #在ψ中记录对应的最大状态索引
                 psi[t][i] = maxDeltaIndex
 
-        #建立一个状态链列表，开始生成状态链
-        sequence = []
         #算法10.5 第三步：终止
         #在上面for循环全部结束后，很明显就到了第三步了
         #获取最后一个状态的最大状态概率对应的索引
         i_opt = delta[len(line) - 1].index(max(delta[len(line) - 1]))
-        #在状态链中添加索引
-        #注：状态链应该是B、M、E、S，这里图方便用了0、1、2、3，其实一样的
-        sequence.append(i_opt)
+        sequence = [i_opt]
         #算法10.5 第四步：最优路径回溯
         #从后往前遍历整条链
         for t in range(len(line) - 1, 0, -1):
@@ -242,7 +230,7 @@ def participle(artical, PI, A, B):
             curLine += line[i]
             #如果该字是3：S->单个词  或  2:E->结尾词 ，则在该字后面加上分隔符 |
             #此外如果改行的最后一个字了，也就不需要加 |
-            if (sequence[i] == 3 or sequence[i] == 2) and i != (len(line) - 1):
+            if sequence[i] in [3, 2] and i != (len(line) - 1):
                 curLine += '|'
         #在返回列表中添加分词后的该行
         retArtical.append(curLine)

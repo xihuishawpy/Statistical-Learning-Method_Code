@@ -69,14 +69,10 @@ def cal_V(X):
     Sx = np.matmul(newX.T, newX)  #计算X的协方差矩阵Sx = X'.T * X'
     V_T = []  #用于保存V的转置
     w, v = np.linalg.eig(Sx)  #计算Sx的特征值和对应的特征向量，即为X’的奇异值和奇异向量
-    tmp = {}  #定义一个字典用于保存特征值和特征向量，字典的键为特征值，值为对应的特征向量
-    for i in range(len(w)):
-        tmp[w[i]] = v[i]
+    tmp = {w[i]: v[i] for i in range(len(w))}
     eigvalues = sorted(tmp, reverse=True)  #将特征值逆序排列后保存到eigvalues列表中
     for i in eigvalues:
-        d = 0
-        for j in range(len(tmp[i])):
-            d += tmp[i][j] ** 2
+        d = sum(tmp[i][j] ** 2 for j in range(len(tmp[i])))
         V_T.append(tmp[i] / np.sqrt(d))  #计算特征值i的单位特征向量，即为V矩阵的列向量，将其保存到V_T中
     V = np.array(V_T).T  #对V_T进行转置得到V矩阵
     return eigvalues, V

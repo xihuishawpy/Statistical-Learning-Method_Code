@@ -109,7 +109,7 @@ def do_lda(text, words, alpha, beta, K, iters):
     for m in range(M):
         zm = []
         t = text[m]
-        for n, w in enumerate(t):
+        for w in t:
             v = words.index(w)
             z = np.random.randint(K)
             zm.append(z)
@@ -120,7 +120,7 @@ def do_lda(text, words, alpha, beta, K, iters):
         Z_MN.append(zm)
     #算法20.2的步骤(3)，多次迭代进行吉布斯抽样
     for i in range(iters):
-        print('{}/{}'.format(i+1, iters))
+        print(f'{i + 1}/{iters}')
         for m in range(M):
             t = text[m]
             for n, w in enumerate(t):
@@ -131,16 +131,14 @@ def do_lda(text, words, alpha, beta, K, iters):
                 N_KV[z][v] -= 1
                 N_K[z] -= 1
                 p = []  #用来保存对K个话题的条件分布p(zi|z_i,w,alpha,beta)的计算结果
-                sums_k = 0  
+                sums_k = 0
                 for k in range(K):
                     p_zk = (N_KV[k][v] + beta[v]) * (N_MK[m][k] + alpha[k])  #话题zi=k的条件分布p(zi|z_i,w,alpha,beta)的分子部分
-                    sums_v = 0
                     sums_k += N_MK[m][k] + alpha[k]  #累计(nmk + alpha_k)在K个话题上的和
-                    for t in range(V):
-                        sums_v += N_KV[k][t] + beta[t]  #累计(nkv + beta_v)在V个单词上的和
+                    sums_v = sum(N_KV[k][t] + beta[t] for t in range(V))
                     p_zk /= sums_v
                     p.append(p_zk)
-                p = p / sums_k
+                p /= sums_k
                 p = p / np.sum(p)  #对条件分布p(zi|z_i,w,alpha,beta)进行归一化，保证概率的总和为1
                 new_z = np.random.choice(a=K, p=p)  #根据以上计算得到的概率进行抽样，得到新的话题
                 Z_MN[m][n] = new_z  #更新当前位置处的话题为上面抽样得到的新话题
@@ -178,10 +176,8 @@ if __name__ == "__main__":
     #打印出每个话题zk条件下出现概率最大的前10个单词，即P(wi|zk)在话题zk中最大的10个值对应的单词，作为对话题zk的文本描述
     for k in range(K):
         sort_inds = np.argsort(phi[k])[::-1]  #对话题zk条件下的P(wi|zk)的值进行降序排列后取出对应的索引值
-        topic = []  #定义一个空列表用于保存话题zk概率最大的前10个单词
-        for i in range(10):
-            topic.append(words[sort_inds[i]])  
+        topic = [words[sort_inds[i]] for i in range(10)]
         topic = ' '.join(topic)  #将10个单词以空格分隔，构成对话题zk的文本表述
-        print('Topic {}: {}'.format(k+1, topic))  #打印话题zk
+        print(f'Topic {k + 1}: {topic}')
     end = time.time()
     print('Time:', end-start)

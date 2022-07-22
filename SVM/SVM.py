@@ -25,11 +25,12 @@ def loadData(fileName):
     :return: 数据集和标签集
     '''
     #存放数据及标记
-    dataArr = []; labelArr = []
+    dataArr = []
+    labelArr = []
     #读取文件
     fr = open(fileName)
     #遍历文件中的每一行
-    for line in fr.readlines():
+    for line in fr:
         #获取当前行，并按“，”切割成字段放入列表中
         #strip：去掉每行字符串首尾指定的字符（默认空格或换行符）
         #split：按照指定的字符将字符串切割成每个字段，返回列表形式
@@ -89,7 +90,7 @@ class SVM:
         '''
         #初始化高斯核结果矩阵 大小 = 训练集长度m * 训练集长度m
         #k[i][j] = Xi * Xj
-        k = [[0 for i in range(self.m)] for j in range(self.m)]
+        k = [[0 for _ in range(self.m)] for _ in range(self.m)]
 
         #大循环遍历Xi，Xi为式7.90中的x
         for i in range(self.m):
@@ -151,8 +152,6 @@ class SVM:
         :param i:x的下标
         :return: g(xi)的值
         '''
-        #初始化g(xi)
-        gxi = 0
         #因为g(xi)是一个求和式+b的形式，普通做法应该是直接求出求和式中的每一项再相加即可
         #但是读者应该有发现，在“7.2.3 支持向量”开头第一句话有说到“对应于α>0的样本点
         #(xi, yi)的实例xi称为支持向量”。也就是说只有支持向量的α是大于0的，在求和式内的
@@ -163,10 +162,7 @@ class SVM:
         #角度上将也可以扔掉不算
         #index获得非零α的下标，并做成列表形式方便后续遍历
         index = [i for i, alpha in enumerate(self.alpha) if alpha != 0]
-        #遍历每一个非零α，i为非零α的下标
-        for j in index:
-            #计算g(xi)
-            gxi += self.alpha[j] * self.trainLabelMat[j] * self.k[j][i]
+        gxi = sum(self.alpha[j] * self.trainLabelMat[j] * self.k[j][i] for j in index)
         #求和结束后再单独加上偏置b
         gxi += self.b
 
